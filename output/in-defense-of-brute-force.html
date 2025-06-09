@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+        <head>
+                        <meta charset="utf-8" />
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                        <meta name="generator" content="Pelican" />
+                        <title>In Defense of Brute Force</title>
+                        <link rel="stylesheet" href="/theme/css/main.css" />
+    <meta name="description" content="In Defense of Brute Force There are a lot of talented developers in this world who write very elegant code. You look at it and sit there in awe at..." />
+        </head>
+
+        <body id="index" class="home">
+                <header id="banner" class="body">
+                        <h1><a href="/">Awkward Python</a></h1>
+                        <nav><ul>
+                                                <li class="active"><a href="/category/misc.html">misc</a></li>
+                        </ul></nav>
+                </header><!-- /#banner -->
+  <section id="content" class="body">
+    <article>
+      <header>
+        <h1 class="entry-title">
+          <a href="/in-defense-of-brute-force.html" rel="bookmark"
+             title="Permalink to In Defense of Brute Force">In Defense of Brute Force</a></h1>
+      </header>
+
+      <div class="entry-content">
+<footer class="post-info">
+        <abbr class="published" title="2025-06-06T00:00:00-04:00">
+                Published: Fri 06 June 2025
+        </abbr>
+
+                <address class="vcard author">
+                        By                                 <a class="url fn" href="/author/mark-lattimore.html">Mark Lattimore</a>
+                </address>
+        <p>In <a href="/category/misc.html">misc</a>.</p>
+        
+</footer><!-- /.post-info -->        <h1>In Defense of Brute Force</h1>
+<p>There are a lot of talented developers in this world who write very elegant code. You look at it and sit there in awe at how much gets done with so little code. I'm not one of those developers. In fact, I think calling myself a Python developer is an insult to the folks who do it for real. I'm more of a programming enthusiast than a real developer. My one serious Django project might pay off—eventually. </p>
+<p>Anyway, programming isn't my 9 to 5. I write mostly for fun except for when I'm banging my head on the desk trying to get the one serious project to work. I work an hour here, 30 minutes there--just whenever I can find the time. And because my life consists of almost entirely something other than software, I don't have a lot of time to focus on pretty code. As a (real) developer friend once told me, working code is good code. So, I get it to work however I can. And it's usually inelegant and, dare I say, awkward (Hey! And I just closed the circle on the name of this blog). But it works and is, therefore good. For me, anyway. Here's an example of this "awkward python."  </p>
+<p>I love Django. I've written many toys using Django, including 5 or 10 iterations of a library app (I'm kind of a bibliophile, so I like to keep track of what I own). My only "serious" project is also written in Django. What they all have in common is keeping track of people's names. And, of course, there are at least two things we always want to be able to do with names: search for them and sort them. It's the sorting that got me thinking. If I want to sort a list of names by last name, the most obvious solution is, when inputting the names, use separate fields for first name, middle_name, last_name, and suffix (e.g. Jr. Sr. MD, etc). It's a simple solution used by many thousands of applications. This makes sorting a trivial matter. Just sort by <code>last_name</code>. But I hate it. I'd much rather type "Charles Emerson Winchester, III" than "Charles" [tab] "Emerson" [tab] "Winchester" [tab] "III." I'm getting old. My hands get tired. I need to cut down on my keystrokes.  </p>
+<p>Since I do this kind of thing a fair amount, I wanted to automate the process of separating a full name into its parts and auto-populating database fields with the parts. That way, I can just type "Charles Emerson Winchester, III" and still sort names any way I like. So I wrote a function and parleyed that into my first and, to date, only Pypi package, <code>simple_name_parser</code>. So, how does it work? Here's the underlying function (the Pypi package does the same thing in basically the same way but has a little different structure).    </p>
+<p>We start by importing <code>namedtuple</code>, defining the function (which has a single <code>full_name</code> parameter), creating a named tuple <code>Name</code>, and then listing possible name suffixes, e.g. Jr., Sr., II, etc. This is our first act of brute force. I want the function to identify the use of suffixes and doing a simple check against a list of possibles is the simplest way I know to do it. Sure, I could write a regex pattern that would better handle some edge like multi-word, unhyphenated last names, e.g. "de la Cruz" cases (well, let's be honest, ChatGPT could write one for me), but that would make the code harder to read. With this, we know exactly what we're looking at and because this isn't some enterprise-level, critical application, we're ok (or at least I'm ok) with having to handle the edge cases manually.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span>
+
+
+<span class="k">def</span> <span class="nf">parse_name</span><span class="p">(</span><span class="n">full_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">namedtuple</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns named tuple for first name, middle name, last name, and suffix from a </span>
+<span class="sd">    full name input as string. For example, &#39;Charles Emerson Winchester, III&#39; returns</span>
+<span class="sd">    Name(first_name=&quot;Charles&quot;, middle_name=&#39;Emerson&#39;, last_name=&#39;Winchester&#39;, suffix=&#39;III&#39;)&quot;&quot;&quot;</span>
+
+    <span class="n">Name</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">&quot;Name&quot;</span><span class="p">,</span> <span class="s2">&quot;first_name, middle_name, last_name, suffix&quot;</span><span class="p">)</span>
+    <span class="n">suffixes</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;Jr&quot;</span><span class="p">,</span> <span class="s2">&quot;Jr.&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Sr&quot;</span><span class="p">,</span> <span class="s2">&quot;Sr.&quot;</span><span class="p">,</span> 
+        <span class="s2">&quot;I&quot;</span><span class="p">,</span> <span class="s2">&quot;II&quot;</span><span class="p">,</span> <span class="s2">&quot;III&quot;</span><span class="p">,</span> <span class="s2">&quot;IV&quot;</span><span class="p">,</span> <span class="s2">&quot;V&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Esq&quot;</span><span class="p">,</span> <span class="s2">&quot;Esq.&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;MD&quot;</span><span class="p">,</span> <span class="s2">&quot;M.D.&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;PhD&quot;</span><span class="p">,</span> <span class="s2">&quot;Ph.D.&quot;</span>
+    <span class="p">]</span>
+</code></pre></div>
+
+<p>Next, we use the built-in <code>.split()</code> method on the full name to separate the string at the spaces, making a list of the as-yet undefined name parts. Then there's the longish if/else block. It first determines whether there is suffix then walks through the possible name configurations. If there's only a suffix and one other string, we assume that the other string is a last name. If there is a suffix and two other strings, it's a safe bet that the other two strings are first name and last name, respectively. Finally, if there is a suffix and three or more additional strings, we assume that the first string is the first name, the next to last string (index position -2) is a last name, and the rest one or more middle names.</p>
+<div class="highlight"><pre><span></span><code>    <span class="n">name_list</span> <span class="o">=</span> <span class="n">full_name</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+
+    <span class="c1"># First determine whether there is a suffix</span>
+    <span class="k">if</span> <span class="n">name_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">suffixes</span><span class="p">:</span>
+        <span class="c1"># Last name and suffix</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">name_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">first_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">middle_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">last_name</span> <span class="o">=</span> <span class="n">name_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">suffix</span> <span class="o">=</span> <span class="n">name_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># First name, last name, suffix</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">name_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">first_name</span> <span class="o">=</span> <span class="n">name_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">middle_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">last_name</span> <span class="o">=</span> <span class="n">name_list</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">suffix</span> <span class="o">=</span> <span class="n">name_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># First name, middle name(s), last_name, suffix</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">first_name</span> <span class="o">=</span> <span class="n">name_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">middle_name</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">name_list</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+            <span class="n">last_name</span> <span class="o">=</span> <span class="n">name_list</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">suffix</span> <span class="o">=</span> <span class="n">name_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</code></pre></div>
+
+<p>Finally, we go through the same steps determining which string in the list corresponds to which place in the name when there is no suffix. Again, we brute force our way through the possible combinations. Nothing fancy. No clever shortcuts or complex pattern matching or ridiculous regex patterns (I think all regex patterns are ridiculous--awesome and immensely useful--but still ridiculous). And it's very easy to walk through each conditional and discern what the code is doing.</p>
+<div class="highlight"><pre><span></span><code>    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># One name is treated like last name, e.g. Plato, Aristotle, since last name is the most common sorting pattern</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">name_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">first_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">middle_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">last_name</span> <span class="o">=</span> <span class="n">name_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">suffix</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="c1"># Two names assumed to be first name, last name</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">name_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">first_name</span> <span class="o">=</span> <span class="n">name_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">middle_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">last_name</span> <span class="o">=</span> <span class="n">name_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">suffix</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="c1"># Finally, three or more assumed to be first name, middle name(s), last name</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">first_name</span> <span class="o">=</span> <span class="n">name_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">middle_name</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">name_list</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">last_name</span> <span class="o">=</span> <span class="n">name_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">suffix</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="c1"># Create and assign name to namedtuple; strip any comma between last name and suffix</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">Name</span><span class="p">(</span><span class="n">first_name</span><span class="p">,</span> <span class="n">middle_name</span><span class="p">,</span> <span class="n">last_name</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">),</span> <span class="n">suffix</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">name</span>
+</code></pre></div>
+
+<p>See, long, inelegant, not a single regex or optimized third party library to be found. Just a list, a longish <code>if/else</code> block, the <code>.split()</code> and <code>"".join()</code> methods, and Bob's your uncle. Running <code>parse_name("Charles Emerson Winchester, III")</code> returns <code>Name(first_name='Charles', middle_name='Emerson', last_name='Winchester', suffix='III')</code>. Nice, huh?  </p>
+<p>So what's my point? There is absolutely nothing sexy or elegant about this function. It uses lists, built-in methods, index references, one standard library module, and brute forces the different combinations of first_name, middle_name, last_name, and suffix to give me what I want. Can this be written more succintly? More elegantly? In such a way that it doesn't look like it was written by someone who just finished Chapter 3 of some "Learn Python" book? Yup. In fact, I asked ChatGPT to rewrite this function twice. First, I instructed it to write the function "as a very experienced developer who writes concise, elegant, efficient code." 26 lines of code later (vs. my 55), the job is done (using essentially the same approach)  </p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span>
+
+<span class="n">Name</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">&quot;Name&quot;</span><span class="p">,</span> <span class="s2">&quot;first_name middle_name last_name suffix&quot;</span><span class="p">)</span>
+
+<span class="n">SUFFIXES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;Jr&quot;</span><span class="p">,</span> <span class="s2">&quot;Jr.&quot;</span><span class="p">,</span> <span class="s2">&quot;Sr&quot;</span><span class="p">,</span> <span class="s2">&quot;Sr.&quot;</span><span class="p">,</span> <span class="s2">&quot;I&quot;</span><span class="p">,</span> <span class="s2">&quot;II&quot;</span><span class="p">,</span> <span class="s2">&quot;III&quot;</span><span class="p">,</span> <span class="s2">&quot;IV&quot;</span><span class="p">,</span> <span class="s2">&quot;V&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Esq&quot;</span><span class="p">,</span> <span class="s2">&quot;Esq.&quot;</span><span class="p">,</span> <span class="s2">&quot;MD&quot;</span><span class="p">,</span> <span class="s2">&quot;M.D.&quot;</span><span class="p">,</span> <span class="s2">&quot;PhD&quot;</span><span class="p">,</span> <span class="s2">&quot;Ph.D.&quot;</span>
+<span class="p">}</span>
+
+
+<span class="k">def</span> <span class="nf">parse_name</span><span class="p">(</span><span class="n">full_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Name</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse a full name into first, middle, last, and suffix components.&quot;&quot;&quot;</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="n">full_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+
+    <span class="n">suffix</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">SUFFIXES</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">suffix</span> <span class="k">else</span> <span class="n">parts</span>
+
+    <span class="n">first</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">parts</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">last</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">middle</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="c1"># Handle single-name input</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Name</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">suffix</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">Name</span><span class="p">(</span><span class="n">first</span><span class="p">,</span> <span class="n">middle</span><span class="p">,</span> <span class="n">last</span><span class="p">,</span> <span class="n">suffix</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Next, I told ChatGPT to "rewrite my original function in a way that is not convoluted or confusing but still in as few lines of code as possible. You are free to use any library in the Python standard library or any known third party library as long as it assist you in carrying out these instructions. The output doesn't have to be a named tuple. I just need output that separates the name into its parts." In 24 lines, it produces a working function using <code>re</code> and a dictionary -- different approach to mine, but same end result.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">re</span>
+
+<span class="n">SUFFIXES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;Jr&quot;</span><span class="p">,</span> <span class="s2">&quot;Jr.&quot;</span><span class="p">,</span> <span class="s2">&quot;Sr&quot;</span><span class="p">,</span> <span class="s2">&quot;Sr.&quot;</span><span class="p">,</span> <span class="s2">&quot;I&quot;</span><span class="p">,</span> <span class="s2">&quot;II&quot;</span><span class="p">,</span> <span class="s2">&quot;III&quot;</span><span class="p">,</span> <span class="s2">&quot;IV&quot;</span><span class="p">,</span> <span class="s2">&quot;V&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Esq&quot;</span><span class="p">,</span> <span class="s2">&quot;Esq.&quot;</span><span class="p">,</span> <span class="s2">&quot;MD&quot;</span><span class="p">,</span> <span class="s2">&quot;M.D.&quot;</span><span class="p">,</span> <span class="s2">&quot;PhD&quot;</span><span class="p">,</span> <span class="s2">&quot;Ph.D.&quot;</span>
+<span class="p">}</span>
+
+<span class="k">def</span> <span class="nf">parse_name</span><span class="p">(</span><span class="n">full_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">full_name</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+    <span class="n">suffix</span> <span class="o">=</span> <span class="n">parts</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span> <span class="k">if</span> <span class="n">parts</span> <span class="ow">and</span> <span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">SUFFIXES</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="n">first</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">parts</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">last</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">middle</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">first</span><span class="p">,</span> <span class="n">middle</span><span class="p">,</span> <span class="n">last</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;first_name&quot;</span><span class="p">:</span> <span class="n">first</span><span class="p">,</span>
+        <span class="s2">&quot;middle_name&quot;</span><span class="p">:</span> <span class="n">middle</span><span class="p">,</span>
+        <span class="s2">&quot;last_name&quot;</span><span class="p">:</span> <span class="n">last</span><span class="p">,</span>
+        <span class="s2">&quot;suffix&quot;</span><span class="p">:</span> <span class="n">suffix</span>
+    <span class="p">}</span>
+</code></pre></div>
+
+<p>These are both great solutions. So why do I still use (and prefer) my awkward, brute-force function? Because it’s mine, it works, and I can read and understand it. And I'm reasonably confident that in 10 years, it's still going to work.</p>
+<h2>Readability</h2>
+<p>The function flows linearly and "reasons" about the process in much (but not entirely) same way I reason about it in my head when I look at a name on a page and identify the parts. And because it follows what I view to be an organic pattern, I can come back to the code in six months and still know what I'm looking at without having to Google a regex flag.</p>
+<h2>Stability</h2>
+<p>I intentionally wrote this function using only built-ins and one standard library module (Rewriting it using solely built-ins would be a trivial matter). This means that unless there is a complete, fundamental rewrite of the Python language (in which case would it be Python? Think "Ship of Theseus"), this function will still work. I don't have to worry about Python 3.41 breaking my code. And, it goes without saying (but I will anyway) that avoided third party libraries at all costs. No worrying about a bored, overworked or, God forbid, dead maintainer.</p>
+      </div><!-- /.entry-content -->
+
+    </article>
+  </section>
+                <section id="extras" class="body">
+                                <div class="blogroll">
+                                        <h2>links</h2>
+                                        <ul>
+                                                        <li><a href="https://getpelican.com/">Pelican</a></li>
+                                                        <li><a href="https://www.python.org/">Python.org</a></li>
+                                                        <li><a href="https://palletsprojects.com/p/jinja/">Jinja2</a></li>
+                                                        <li><a href="#">You can modify those links in your config file</a></li>
+                                        </ul>
+                                </div><!-- /.blogroll -->
+                                <div class="social">
+                                        <h2>social</h2>
+                                        <ul>
+
+                                                        <li><a href="#">You can add links in your config file</a></li>
+                                                        <li><a href="#">Another social link</a></li>
+                                        </ul>
+                                </div><!-- /.social -->
+                </section><!-- /#extras -->
+
+                <footer id="contentinfo" class="body">
+                        <address id="about" class="vcard body">
+                                Proudly powered by <a rel="nofollow" href="https://getpelican.com/">Pelican</a>, which takes great advantage of <a rel="nofollow" href="https://www.python.org/">Python</a>.
+                        </address><!-- /#about -->
+
+                        <p>The theme is by <a rel="nofollow" href="https://www.smashingmagazine.com/2009/08/designing-a-html-5-layout-from-scratch/">Smashing Magazine</a>, thanks!</p>
+                </footer><!-- /#contentinfo -->
+
+        </body>
+</html>
