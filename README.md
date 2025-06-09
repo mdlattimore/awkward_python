@@ -1,6 +1,3 @@
-Title: Working Code Is Good Code  
-Date: 2025-06-06
-
 # Working Code Is Good Code
 
 There are a lot of talented developers in this world who write elegant code. You look at it and marvel at how much gets done with so little. I'm not one of those developers. Honestly, calling myself a Python developer feels like an insult to the folks who do it for real. I'm more of a programming enthusiast than a professional. My one serious (hopefully commercial) project might eventually pay off.
